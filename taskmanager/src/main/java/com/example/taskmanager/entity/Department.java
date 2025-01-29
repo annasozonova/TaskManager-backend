@@ -26,7 +26,6 @@ public class Department {
 
     @OneToMany(mappedBy = "department")
     @JsonIgnore
-    //@JsonBackReference("users-department")
     private Set<User> users;
 
     @OneToMany(mappedBy = "department")
@@ -87,5 +86,13 @@ public class Department {
 
     public void setTasks(Set<Task> tasks) {
         this.tasks = tasks;
+    }
+
+    @Override
+    public String toString() {
+        return "Department{" +
+                "id=" + id +
+                ", name='" + name + '\'' +
+                '}';
     }
 }

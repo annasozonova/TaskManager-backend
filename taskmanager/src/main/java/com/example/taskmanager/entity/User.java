@@ -1,34 +1,30 @@
-// Entity class for User
 package com.example.taskmanager.entity;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import org.hibernate.annotations.ColumnDefault;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
-import java.util.Set;
 
 @Entity
 @Table(name = "users")
-public class User {
+public class User implements UserDetails {
 
-    // Enum to represent the role of a user
-    public enum UserRole {
-        EMPLOYEE,
-        DEPARTMENT_HEAD,
-        ADMIN
-    }
+    public enum UserRole {EMPLOYEE, DEPARTMENT_HEAD, ADMIN}
 
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "users_id_gen")
-    @SequenceGenerator(name = "users_id_gen", sequenceName = "users_id_seq", allocationSize = 1)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "users_id_seq")
+    @SequenceGenerator(name = "users_id_seq", sequenceName = "users_id_seq", allocationSize = 1)
     @Column(name = "id", nullable = false)
     private Integer id;
 
@@ -65,30 +61,17 @@ public class User {
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
-    //@JsonBackReference("tasks-user")
     @JsonIgnore
     @OneToMany(mappedBy = "assignedTo")
     private List<Task> tasks;
 
-    @ManyToOne
-    //@JsonManagedReference("users-department")
-    @JoinColumn(name = "department_id", referencedColumnName = "id")
-    private Department department;
-
-    @Transient
-    public String getDepartmentName() {
-        return department != null ? department.getName() : null;
-    }
-
-    @JsonIgnore
-    @ManyToOne
+    @OneToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "qualification_id", referencedColumnName = "id")
     private Qualification qualification;
 
-    @Transient
-    public String getQualificationType() {
-        return qualification != null ? qualification.getQualification().toString() : null;
-    }
+    @ManyToOne
+    @JoinColumn(name = "department_id")
+    private Department department;
 
     @PrePersist
     protected void onCreate() {
@@ -101,7 +84,22 @@ public class User {
         updatedAt = Instant.now();
     }
 
-    // Getters and setters
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        List<SimpleGrantedAuthority> authorities = new ArrayList<>();
+        authorities.add(new SimpleGrantedAuthority("ROLE_" + role.name()));
+        return authorities;
+    }
+
+    // Getters and Setters
+
+    public void setQualification(Qualification qualification) {
+        this.qualification = qualification;
+    }
+
+    public Qualification getQualification() {
+        return qualification;
+    }
 
     public List<Task> getTasks() {
         return tasks;
@@ -109,14 +107,6 @@ public class User {
 
     public void setTasks(List<Task> tasks) {
         this.tasks = tasks;
-    }
-
-    public Qualification getQualification() {
-        return qualification;
-    }
-
-    public void setQualification(Qualification qualification) {
-        this.qualification = qualification;
     }
 
     public Department getDepartment() {
@@ -197,5 +187,33 @@ public class User {
 
     public void setUpdatedAt(Instant updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    @Override
+    public String toString() {
+        return "User{" + "id=" + id +
+                ", username='" + username + '\'' +
+                ", email='" + email + '\'' +
+                ", password='" + password + '\'' +
+                ", firstName='" + firstName + '\'' +
+                ", lastName='" + lastName + '\'' +
+                ", role=" + role +
+                ", createdAt=" + createdAt +
+                ", updatedAt=" + updatedAt +
+                ", department=" + department +
+                ", qualification=" + qualification + '}';
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        User user = (User) o;
+        return id != null && id.equals(user.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return id != null ? id.hashCode() : 0;
     }
 }

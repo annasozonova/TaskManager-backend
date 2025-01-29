@@ -2,20 +2,25 @@ package com.example.taskmanager.service;
 
 import com.example.taskmanager.entity.Qualification;
 import com.example.taskmanager.exception.ResourceNotFoundException;
+import com.example.taskmanager.repository.DepartmentRepository;
 import com.example.taskmanager.repository.QualificationRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Optional;
 
 @Service
 public class QualificationService {
 
     private final QualificationRepository qualificationRepository;
+    private final DepartmentRepository departmentRepository;
 
     @Autowired
-    public QualificationService(QualificationRepository qualificationRepository) {
+    public QualificationService(QualificationRepository qualificationRepository, DepartmentRepository departmentRepository) {
         this.qualificationRepository = qualificationRepository;
+        this.departmentRepository = departmentRepository;
     }
 
     /**
@@ -23,17 +28,31 @@ public class QualificationService {
      * @param qualification The qualification record to create.
      * @return The saved qualification record.
      */
+    @Transactional
     public Qualification createQualification(Qualification qualification) {
         return qualificationRepository.save(qualification);
     }
 
-    /**
-     * Retrieve qualification by user id.
-     * @param userId The id of the user whose qualification is to be fetched.
-     * @return The qualification of the user.
-     */
-    public Qualification getQualificationByUserId(Integer userId) {
-        Optional<Qualification> qualification = qualificationRepository.findByUserId(userId);
-        return qualification.orElseThrow(() -> new ResourceNotFoundException("Qualification not found for user with id " + userId));
+    public Qualification updateQualification(Integer id, Qualification qualification) {
+        if (!departmentRepository.existsById(id)) {
+            throw new ResourceNotFoundException("Qualification not found for id " + id);
+        }
+        qualification.setId(id);
+        return qualificationRepository.save(qualification);
+    }
+
+    public List<Qualification> getAllQualifications() {
+        return qualificationRepository.findAll();
+    }
+
+    public void deleteQualification(Integer id) {
+        qualificationRepository.deleteById(id);
+    }
+
+    public Optional<Qualification> findQualificationById(Integer id) {
+        if (!qualificationRepository.existsById(id)) {
+            throw new ResourceNotFoundException("Qualification not found for id " + id);
+        }
+        return qualificationRepository.findById(id);
     }
 }

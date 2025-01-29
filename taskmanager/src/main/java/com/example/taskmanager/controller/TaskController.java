@@ -1,11 +1,15 @@
 package com.example.taskmanager.controller;
 
 import com.example.taskmanager.entity.Task;
+import com.example.taskmanager.entity.User;
 import com.example.taskmanager.service.TaskService;
+import com.example.taskmanager.service.UserService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.*;
 
@@ -16,9 +20,12 @@ import java.util.stream.Collectors;
 @RequestMapping("/api/tasks")
 public class TaskController {
 
+    @Autowired
     private final TaskService taskService;
 
     @Autowired
+    private UserService userService;
+
     public TaskController(TaskService taskService) {
         this.taskService = taskService;
     }
@@ -39,9 +46,26 @@ public class TaskController {
      * @return A list of all tasks.
      */
     @GetMapping
-    public ResponseEntity<List<Task>> getAllTasks() {
-        List<Task> tasks = taskService.getAllTasks();
-        return ResponseEntity.ok(tasks);
+    public ResponseEntity<?> getTasks(@AuthenticationPrincipal UserDetails userDetails) {
+        if (userDetails != null) {
+            User currentUser = userService.findByUsername(userDetails.getUsername());
+            if (currentUser == null) {
+                return ResponseEntity.status(404).body("User not found");
+            }
+
+            List<Task> tasks;
+            if (currentUser.getRole() == User.UserRole.ADMIN){
+                tasks = taskService.getAllTasks();
+            }
+            else if (currentUser.getRole() == User.UserRole.DEPARTMENT_HEAD) {
+                tasks = taskService.findTasksByDepartment(currentUser.getDepartment().getId());
+            } else {
+                tasks = taskService.findTasksByUser(currentUser.getId());
+            }
+
+            return ResponseEntity.ok(tasks);
+        }
+        return ResponseEntity.status(401).body("Unauthorized");
     }
 
     /**

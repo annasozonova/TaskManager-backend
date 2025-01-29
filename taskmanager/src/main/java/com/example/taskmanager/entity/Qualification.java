@@ -1,6 +1,7 @@
 package com.example.taskmanager.entity;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
@@ -20,21 +21,14 @@ public class Qualification {
     }
 
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "qualifications_id_seq")
-    @SequenceGenerator(name = "qualifications_id_seq", sequenceName = "qualifications_id_seq", allocationSize = 1)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "qualification_id_seq")
+    @SequenceGenerator(name = "qualification_id_seq", sequenceName = "qualification_id_seq", allocationSize = 1)
     @Column(name = "id", nullable = false)
     private Integer id;
-
-    @NotNull
-    @JsonBackReference
-    @ManyToOne( optional = false)
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
 
     @Min(value = 0, message = "Experience years must be at least 0")
     @Column(name = "experience_years", nullable = false)
     private Integer experienceYears;
-
 
     @Column(name = "technologies", length = Integer.MAX_VALUE)
     private String technologies;
@@ -42,6 +36,9 @@ public class Qualification {
     @Enumerated(EnumType.STRING)
     @Column(name = "qualification", length = 50)
     private QualificationType qualification;
+
+    @OneToOne(mappedBy = "qualification")
+    private User user;
 
     //Getters and Setters
 
@@ -51,14 +48,6 @@ public class Qualification {
 
     public void setId(Integer id) {
         this.id = id;
-    }
-
-    public User getUser() {
-        return user;
-    }
-
-    public void setUser(User user) {
-        this.user = user;
     }
 
     public Integer getExperienceYears() {
@@ -91,6 +80,16 @@ public class Qualification {
         if (o == null || getClass() != o.getClass()) return false;
         Qualification that = (Qualification) o;
         return qualification == that.qualification;
+    }
+
+    @Override
+    public String toString() {
+        return "Qualification{" +
+                "id=" + id +
+                ", qualificationType='" + qualification + '\'' +
+                ", years='" + experienceYears + '\'' +
+                ", techno='" + technologies + '\'' +
+                '}';
     }
 
     @Override

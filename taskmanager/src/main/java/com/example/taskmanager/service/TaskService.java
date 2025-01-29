@@ -6,6 +6,7 @@ import com.example.taskmanager.entity.Task;
 import com.example.taskmanager.entity.User;
 import com.example.taskmanager.exception.ResourceNotFoundException;
 import com.example.taskmanager.repository.DepartmentRepository;
+import com.example.taskmanager.repository.QualificationRepository;
 import com.example.taskmanager.repository.TaskRepository;
 import com.example.taskmanager.repository.UserRepository;
 import org.slf4j.Logger;
@@ -52,11 +53,20 @@ public class TaskService {
 
         logger.info("Task received: {}", task.toString());
         Department department = departmentRepository.findById(task.getDepartment().getId())
-                .orElseThrow(() -> new ResourceNotFoundException("Department not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Department not found when creating a task"));
         task.setDepartment(department);
 
-        taskRepository.save(task);
-        return assignTaskAutomatically(task);
+        logger.info("Saved task: {}", task.toString());
+        if (task.getAssignedTo() == null) {
+            taskRepository.save(task);
+            return assignTaskAutomatically(task);
+        }
+        else{
+            User user = userRepository.findById(task.getAssignedTo().getId())
+                    .orElseThrow(() -> new ResourceNotFoundException("User not found when creating a task"));
+            task.setAssignedTo(user);
+            return taskRepository.save(task);
+        }
     }
 
     /**
@@ -137,11 +147,6 @@ public class TaskService {
                     logger.info("User {} is an employee: {}", user.getId(), isEmployee);
                     return isEmployee;
                 })
-                /*.filter(user -> {
-                    boolean isCorrectDepartment = user.getDepartment() != null && user.getDepartment().equals(task.getDepartment());
-                    logger.info("User {} is in department {}: {}", user.getId(), task.getDepartment(), isCorrectDepartment);
-                    return isCorrectDepartment;
-                })*/
                 .filter(user -> {
                     boolean isCorrectDepartment = user.getDepartment() != null &&
                             user.getDepartment().getId() == task.getDepartment().getId();
@@ -169,7 +174,15 @@ public class TaskService {
         User userWithLeastTasks = getUserWithLeastTasks(users);
         task.setAssignedTo(userWithLeastTasks);
 
-        //return taskRepository.save(task);
         return updateTask(task.getId(), task);
+    }
+
+
+    public List<Task> findTasksByDepartment (Integer id) {
+        return taskRepository.findByDepartmentId(id);
+    }
+
+    public List<Task> findTasksByUser (Integer id) {
+        return taskRepository.findByAssignedTo(userRepository.findById(id).get());
     }
 }

@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -77,5 +78,12 @@ public class DepartmentService {
         }
         department.setId(id);
         return departmentRepository.save(department);
+    }
+
+    public Optional<Department> findDepartmentById(Integer id) {
+        if (!departmentRepository.existsById(id)) {
+            throw new ResourceNotFoundException("Department not found with id " + id);
+        }
+        return departmentRepository.findById(id);
     }
 }

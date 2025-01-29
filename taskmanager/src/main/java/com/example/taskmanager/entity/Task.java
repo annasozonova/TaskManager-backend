@@ -62,21 +62,18 @@ public class Task {
     @Column(name = "due_date")
     private LocalDate dueDate;
 
-    //@NotBlank(message = "Priority required")
     @Enumerated(EnumType.STRING)
     @ColumnDefault("LOW")
     @Column(name = "priority", nullable = false)
     private TaskPriority priority;
 
-    //@NotBlank(message = "Status required")
     @Enumerated(EnumType.STRING)
     @ColumnDefault("PENDING")
     @Column(name = "status", nullable = false)
     private TaskStatus status;
 
     @ManyToOne
-    //@JsonManagedReference("tasks-user")
-    @JoinColumn(name = "assigned_to", referencedColumnName = "id")
+    @JoinColumn(name = "assigned_to", referencedColumnName = "id", nullable = true)
     private User assignedTo;
 
 
@@ -86,7 +83,6 @@ public class Task {
     private Qualification.QualificationType requiredQualification;
 
     @ManyToOne
-    //@JsonManagedReference("tasks-department")
     @JoinColumn(name = "department_id", referencedColumnName = "id")
     private Department department;
 

@@ -14,6 +14,8 @@ import org.hibernate.annotations.ColumnDefault;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "tasks")
@@ -47,6 +49,9 @@ public class Task {
 
     @Column(name = "description", length = Integer.MAX_VALUE)
     private String description;
+
+    @ElementCollection
+    private List<String> comments = new ArrayList<>();
 
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm", timezone = "UTC")
     @ColumnDefault("CURRENT_TIMESTAMP")
@@ -98,6 +103,14 @@ public class Task {
     }
 
     // Getters and setters
+
+    public List<String> getComments() {
+        return comments;
+    }
+
+    public void setComments(List<String> comments) {
+        this.comments = comments;
+    }
 
     public Department getDepartment() {
         return department;

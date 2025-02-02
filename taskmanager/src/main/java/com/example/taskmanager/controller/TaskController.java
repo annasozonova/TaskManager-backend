@@ -14,6 +14,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @RestController
@@ -79,16 +80,33 @@ public class TaskController {
         return ResponseEntity.ok(task);
     }
 
-    /**
-     * Updates an existing task by its ID.
-     * @param id The ID of the task to update.
-     * @param task The updated task details.
-     * @return The updated task if found, or HTTP status NOT FOUND if not.
-     */
     @PutMapping("/{id}")
-    public ResponseEntity<Task> updateTask(@PathVariable Integer id, @Valid @RequestBody Task task) {
+    public ResponseEntity<Task> updateTask(@PathVariable Integer id, @RequestBody Map<String, Object> updates, @AuthenticationPrincipal UserDetails userDetails) {
+        Task task = taskService.findTaskById(id);
+
+        if (task == null) {
+            return ResponseEntity.status(404).body(null);
+        }
+
+        // Обновление статуса задачи
+        if (updates.containsKey("status")) {
+            task.setStatus(Task.TaskStatus.valueOf((String) updates.get("status")));
+        }
+
+        // Добавление комментария к задаче
+        if (updates.containsKey("comments")) {
+            task.getComments().add((String) updates.get("comments"));
+        }
+
+        // Обновление описания задачи (только если выдавший задачу)
+        if (userDetails.getAuthorities().stream().anyMatch(auth -> auth.getAuthority().equals("ROLE_ADMIN") || auth.getAuthority().equals("ROLE_DEPARTMENT_HEAD"))) {
+            if (updates.containsKey("description")) {
+                task.setDescription((String) updates.get("description"));
+            }
+        }
+
         Task updatedTask = taskService.updateTask(id, task);
-        return updatedTask != null ? ResponseEntity.ok(updatedTask) : ResponseEntity.notFound().build();
+        return ResponseEntity.ok(updatedTask);
     }
 
     /**

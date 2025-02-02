@@ -185,4 +185,8 @@ public class TaskService {
     public List<Task> findTasksByUser (Integer id) {
         return taskRepository.findByAssignedTo(userRepository.findById(id).get());
     }
+
+    public Task findTaskById(Integer id) {
+        return taskRepository.findById(id).get();
+    }
 }

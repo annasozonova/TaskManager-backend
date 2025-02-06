@@ -1,18 +1,18 @@
 package com.example.taskmanager.service;
 
-import com.example.taskmanager.entity.Department;
-import com.example.taskmanager.entity.Qualification;
-import com.example.taskmanager.entity.Task;
-import com.example.taskmanager.entity.User;
+import com.example.taskmanager.entity.*;
 import com.example.taskmanager.exception.ResourceNotFoundException;
 import com.example.taskmanager.repository.TaskRepository;
 import com.example.taskmanager.repository.UserRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -25,15 +25,17 @@ public class UserService {
     private final QualificationService qualificationService;
     private final DepartmentService departmentService;
     private final TaskRepository taskRepository;
+    private final NotificationService notificationService;
 
     @Autowired
     public UserService(UserRepository userRepository,
                        QualificationService qualificationService,
-                       DepartmentService departmentService, TaskRepository taskRepository, BCryptPasswordEncoder passwordEncoder) {
+                       DepartmentService departmentService, TaskRepository taskRepository, BCryptPasswordEncoder passwordEncoder, NotificationService notificationService) {
         this.userRepository = userRepository;
         this.qualificationService = qualificationService;
         this.departmentService = departmentService;
         this.taskRepository = taskRepository;
+        this.notificationService = notificationService;
     }
 
     @Autowired
@@ -54,6 +56,7 @@ public class UserService {
         if (userRepository.existsByEmail(user.getEmail())) {
             throw new IllegalArgumentException("Email already exists");
         }
+        notificationService.sendAdminNotification("New user registered: " + user.getUsername(), Notification.NotificationType.USER, user.getId());
         return saveUser(user);
     }
 
@@ -63,6 +66,8 @@ public class UserService {
         }
         User existingUser = userRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("User not found with id " + id));
         updateExistingUser(existingUser, userData);
+        notificationService.sendAdminNotification("New user update registered: " + existingUser.getUsername(), Notification.NotificationType.USER, existingUser.getId());
+
         return saveUser(existingUser);
     }
 
@@ -93,7 +98,8 @@ public class UserService {
         }
         taskRepository.saveAll(tasks);
 
-        userRepository.delete(user);
+        userRepository.deleteById(id);
+        notificationService.sendAdminNotification("User deleted: " + user.getUsername(), Notification.NotificationType.USER, user.getId());
     }
 
     private User processUser(Map<String, Object> userData, Integer id) {
@@ -114,6 +120,7 @@ public class UserService {
         user.setLastName((String) userData.get("lastName"));
         user.setRole(User.UserRole.valueOf((String) userData.get("role")));
         user.setQualification(qualification);
+        user.setLastLogin(LocalDateTime.now());
 
         Map<String, Object> departmentData = (Map<String, Object>) userData.get("department");
         Department department = departmentService.findDepartmentById((Integer) departmentData.get("id"))
@@ -161,7 +168,29 @@ public class UserService {
         return userRepository.findByDepartmentId(departmentId);
     }
 
+    public boolean changePassword(String currentPassword, String newPassword) {
+        UserDetails userDetails = (UserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        String username = userDetails.getUsername();
+        User user = userRepository.findByUsername(username);
+
+        if (passwordEncoder.matches(currentPassword, user.getPassword())) {
+            user.setPassword(passwordEncoder.encode(newPassword));
+            userRepository.save(user);
+            return true;
+        } else {
+            return false;
+        }
+    }
+
     public User findByUsername(String username) {
         return userRepository.findByUsername(username);
+    }
+
+    public void updateUserLastLogin(String username) {
+        User user = userRepository.findByUsername(username);
+        if (user != null) {
+            user.setLastLogin(LocalDateTime.now());
+            userRepository.save(user);
+        }
     }
 }

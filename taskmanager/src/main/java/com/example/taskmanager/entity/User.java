@@ -11,15 +11,14 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 
 @Entity
 @Table(name = "users")
 public class User implements UserDetails {
-
     public enum UserRole {EMPLOYEE, DEPARTMENT_HEAD, ADMIN}
 
     @Id
@@ -73,6 +72,12 @@ public class User implements UserDetails {
     @JoinColumn(name = "department_id")
     private Department department;
 
+    @Column(name = "last_login")
+    private LocalDateTime lastLogin;
+
+    @OneToMany(mappedBy = "user")
+    private List<Notification> notifications;
+
     @PrePersist
     protected void onCreate() {
         createdAt = Instant.now();
@@ -92,6 +97,14 @@ public class User implements UserDetails {
     }
 
     // Getters and Setters
+
+    public LocalDateTime getLastLogin() {
+        return lastLogin;
+    }
+
+    public void setLastLogin(LocalDateTime lastLogin) {
+        this.lastLogin = lastLogin;
+    }
 
     public void setQualification(Qualification qualification) {
         this.qualification = qualification;

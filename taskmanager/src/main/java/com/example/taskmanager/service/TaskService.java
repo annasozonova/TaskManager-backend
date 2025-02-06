@@ -1,19 +1,16 @@
 package com.example.taskmanager.service;
 
-import com.example.taskmanager.entity.Department;
-import com.example.taskmanager.entity.Qualification;
-import com.example.taskmanager.entity.Task;
-import com.example.taskmanager.entity.User;
+import com.example.taskmanager.entity.*;
 import com.example.taskmanager.exception.ResourceNotFoundException;
-import com.example.taskmanager.repository.DepartmentRepository;
-import com.example.taskmanager.repository.QualificationRepository;
-import com.example.taskmanager.repository.TaskRepository;
-import com.example.taskmanager.repository.UserRepository;
+import com.example.taskmanager.repository.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -23,17 +20,20 @@ public class TaskService {
 
     private static final Logger logger = LoggerFactory.getLogger(TaskService.class);
 
-
-    private final TaskRepository taskRepository;
-    private final UserRepository userRepository;
-    private final DepartmentRepository departmentRepository;
+    @Autowired
+    private NotificationService notificationService;
 
     @Autowired
-    public TaskService(TaskRepository taskRepository, UserRepository userRepository, DepartmentRepository departmentRepository) {
-        this.taskRepository = taskRepository;
-        this.userRepository = userRepository;
-        this.departmentRepository = departmentRepository;
-    }
+    private TaskRepository taskRepository;
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private DepartmentRepository departmentRepository;
+
+    @Autowired
+    private TaskCommentRepository taskCommentRepository;
 
     /**
      * Creates a new task and assigns it automatically to a user with the least tasks.
@@ -56,16 +56,21 @@ public class TaskService {
                 .orElseThrow(() -> new ResourceNotFoundException("Department not found when creating a task"));
         task.setDepartment(department);
 
-        logger.info("Saved task: {}", task.toString());
+        logger.info("Task before user appointment: {}", task.toString());
+
         if (task.getAssignedTo() == null) {
             taskRepository.save(task);
+            logger.info("Calling assignTaskAutomatically for task {}", task.getId());
             return assignTaskAutomatically(task);
         }
         else{
             User user = userRepository.findById(task.getAssignedTo().getId())
                     .orElseThrow(() -> new ResourceNotFoundException("User not found when creating a task"));
             task.setAssignedTo(user);
-            return taskRepository.save(task);
+            taskRepository.save(task);
+            notificationService.sendNotification("You have been assigned a new task: " + task.getTitle(), user.getUsername(), Notification.NotificationType.TASK, task.getId());
+            notificationService.sendDepartmentHeadNotification("A new task has been created: " + task.getTitle(), department.getId(), Notification.NotificationType.TASK, task.getId());
+            return task;
         }
     }
 
@@ -97,14 +102,32 @@ public class TaskService {
         if (!taskRepository.existsById(id)) {
             throw new ResourceNotFoundException("Task not found with id " + id);
         }
-        task.setId(id);
-        return taskRepository.save(task);
+
+        Task existingTask = taskRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Task not found"));
+
+        existingTask.setTitle(task.getTitle());
+        existingTask.setDescription(task.getDescription());
+        existingTask.setDueDate(task.getDueDate());
+        existingTask.setPriority(task.getPriority());
+        existingTask.setStatus(task.getStatus());
+        existingTask.setAssignedTo(task.getAssignedTo());
+        existingTask.setDepartment(task.getDepartment());
+        existingTask.setRequiredQualification(task.getRequiredQualification());
+        existingTask.setComments(task.getComments());
+
+        Task updatedTask = taskRepository.save(existingTask);
+
+        // Уведомление главы департамента об изменении задачи
+        notificationService.sendDepartmentHeadNotification("Task updated: " + existingTask.getTitle(), existingTask.getDepartment().getId(), Notification.NotificationType.TASK, existingTask.getId());
+
+        return updatedTask;
     }
 
-    /**
-     * Deletes a task by its ID.
-     * @param id The ID of the task to delete.
-     */
+        /**
+         * Deletes a task by its ID.
+         * @param id The ID of the task to delete.
+         */
     public void deleteTask(Integer id) {
         if (!taskRepository.existsById(id)) {
             throw new ResourceNotFoundException("Task not found with id " + id);
@@ -118,8 +141,8 @@ public class TaskService {
      * @return The user with the least tasks.
      */
     private User getUserWithLeastTasks(List<User> users){
-        return users.stream().min(Comparator.comparingInt(this::getTaskCountForUser))
-                .orElseThrow(() -> new RuntimeException("No users available for task assignment"));
+        return users.stream().min(Comparator.comparingInt(u -> u.getTasks().size()))
+                .orElseThrow(() -> new ResourceNotFoundException("No users available"));
     }
 
     /**
@@ -137,6 +160,7 @@ public class TaskService {
      * @return The task with the assigned user.
      */
     public Task assignTaskAutomatically(Task task) {
+        logger.info("assignTaskAutomatically started");
         List<User> users = userRepository.findAll();
         logger.info("All users before filtering: {}", users);
 
@@ -174,7 +198,13 @@ public class TaskService {
         User userWithLeastTasks = getUserWithLeastTasks(users);
         task.setAssignedTo(userWithLeastTasks);
 
-        return updateTask(task.getId(), task);
+        Task updatedTask = updateTask(task.getId(), task);
+        logger.info("Assigned to user: {}", task.getAssignedTo());
+        logger.info("Assigned user ID: {}", task.getAssignedTo() != null ? task.getAssignedTo().getId() : "null");
+
+        notificationService.sendNotification("You have been assigned a new task: " + task.getTitle(), userWithLeastTasks.getUsername(), Notification.NotificationType.TASK, task.getId());
+
+        return updatedTask;
     }
 
 
@@ -188,5 +218,30 @@ public class TaskService {
 
     public Task findTaskById(Integer id) {
         return taskRepository.findById(id).get();
+    }
+
+    @Scheduled(cron = "0 0 12 * * *") // Запуск каждый день в 10 утра
+    public void checkUpcomingDueDates() {
+        LocalDate today = LocalDate.now();
+        LocalDate threeDaysFromNow = today.plusDays(3);
+
+        List<Task> upcomingTasks = taskRepository.findByDueDateBetween(today, threeDaysFromNow);
+        for (Task task : upcomingTasks) {
+            notificationService.sendNotification("Reminder: The due date for your task '" + task.getTitle() + "' is approaching on " + task.getDueDate(), task.getAssignedTo().getUsername(), Notification.NotificationType.TASK, task.getId());
+            notificationService.sendDepartmentHeadNotification("Reminder: The due date for task '" + task.getTitle() + "' is approaching on " + task.getDueDate(), task.getDepartment().getId(), Notification.NotificationType.TASK, task.getId());
+        }
+    }
+
+    @Transactional
+    public void addComment(Integer taskId, String comment) {
+        Task task = taskRepository.findById(taskId).orElseThrow(() -> new RuntimeException("Task not found"));
+        if (comment != null && !comment.trim().isEmpty()) {
+            TaskComment taskComment = new TaskComment(task, comment);
+            taskCommentRepository.save(taskComment); // Сохранение комментария
+        }
+    }
+
+    public List<TaskComment> getComments(Integer taskId) {
+        return taskCommentRepository.findByTaskId(taskId);
     }
 }

@@ -1,5 +1,6 @@
 package com.example.taskmanager.controller;
 
+import com.example.taskmanager.entity.ChangePasswordRequest;
 import com.example.taskmanager.entity.Department;
 import com.example.taskmanager.entity.Qualification;
 import com.example.taskmanager.entity.User;
@@ -7,6 +8,7 @@ import com.example.taskmanager.exception.ResourceNotFoundException;
 import com.example.taskmanager.service.DepartmentService;
 import com.example.taskmanager.service.QualificationService;
 import com.example.taskmanager.service.UserService;
+import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -93,6 +95,20 @@ public class UserController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
+
+    @PutMapping("/change-password")
+    public ResponseEntity<?> changePassword(@Valid @RequestBody ChangePasswordRequest changePasswordRequest) {
+        String currentPassword = changePasswordRequest.getCurrentPassword();
+        String newPassword = changePasswordRequest.getNewPassword();
+
+        boolean isPasswordChanged = userService.changePassword(currentPassword, newPassword);
+        if (isPasswordChanged) {
+            return ResponseEntity.ok().body("Password changed successfully");
+        } else {
+            return ResponseEntity.badRequest().body("Current password is incorrect");
+        }
+    }
+
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<String> handleValidationException(MethodArgumentNotValidException ex) {

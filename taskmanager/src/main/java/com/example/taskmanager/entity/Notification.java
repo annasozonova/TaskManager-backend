@@ -1,6 +1,10 @@
 package com.example.taskmanager.entity;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
+
+import java.time.LocalDateTime;
 
 @Entity
 public class Notification {
@@ -15,8 +19,50 @@ public class Notification {
 
     private String message;
     private boolean read;
+    private LocalDateTime timestamp;
 
-    // Getters and Setters
+    @Enumerated(EnumType.STRING)
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
+    private NotificationType type;
+
+    private Integer referenceId;
+
+    // Constructors, Getters and Setters
+
+    public enum NotificationType {
+        @JsonProperty("TASK")
+        TASK,
+
+        @JsonProperty("USER")
+        USER,
+
+        @JsonProperty("OTHER")
+        OTHER
+    }
+
+    public Notification() {}
+
+    @Override
+    public String toString() {
+        return "Notification{" +
+                "id=" + id +
+                ", user=" + (user != null ? user.getUsername() : "null") +
+                ", message='" + message + '\'' +
+                ", read=" + read +
+                ", timestamp=" + timestamp +
+                ", type=" + type +
+                ", referenceId=" + referenceId +
+                '}';
+    }
+
+    public Notification(User user, String message, boolean read, LocalDateTime timestamp, NotificationType type, Integer referenceId) {
+        this.user = user;
+        this.message = message;
+        this.read = read;
+        this.timestamp = timestamp;
+        this.type = type;
+        this.referenceId = referenceId;
+    }
 
     public Integer getId() {
         return id;
@@ -48,5 +94,21 @@ public class Notification {
 
     public void setRead(boolean read) {
         this.read = read;
+    }
+
+    public LocalDateTime getTimestamp() {
+        return timestamp;
+    }
+
+    public void setTimestamp(LocalDateTime timestamp) {
+        this.timestamp = timestamp;
+    }
+
+    public Integer getReferenceId() {
+        return referenceId;
+    }
+
+    public void setReferenceId(Integer referenceId) {
+        this.referenceId = referenceId;
     }
 }

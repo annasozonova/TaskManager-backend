@@ -1,11 +1,15 @@
 package com.example.taskmanager.controller;
 
+import com.example.taskmanager.entity.Notification;
 import com.example.taskmanager.entity.Task;
+import com.example.taskmanager.entity.TaskComment;
 import com.example.taskmanager.entity.User;
+import com.example.taskmanager.service.NotificationService;
 import com.example.taskmanager.service.TaskService;
 import com.example.taskmanager.service.UserService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.support.DefaultMessageSourceResolvable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -25,10 +29,14 @@ public class TaskController {
     private final TaskService taskService;
 
     @Autowired
+    private final NotificationService notificationService;
+
+    @Autowired
     private UserService userService;
 
-    public TaskController(TaskService taskService) {
+    public TaskController(TaskService taskService, NotificationService notificationService) {
         this.taskService = taskService;
+        this.notificationService = notificationService;
     }
 
     /**
@@ -95,7 +103,8 @@ public class TaskController {
 
         // Добавление комментария к задаче
         if (updates.containsKey("comments")) {
-            task.getComments().add((String) updates.get("comments"));
+            taskService.addComment(task.getId(), (String) updates.get("comments"));
+            notificationService.sendNotification("New comment on task: " + task.getTitle() + " - " + updates.get("comments"), task.getAssignedTo().getUsername(), Notification.NotificationType.TASK, task.getId());
         }
 
         // Обновление описания задачи (только если выдавший задачу)
@@ -120,14 +129,29 @@ public class TaskController {
         return ResponseEntity.noContent().build();
     }
 
+    @PostMapping("/{taskId}/comments")
+    public ResponseEntity<?> addComment(@PathVariable Integer taskId, @RequestBody String comment) {
+        Task task = taskService.findTaskById(taskId);
+        taskService.addComment(taskId, comment);
+        notificationService.sendNotification("New comment on task: " + task.getTitle() + " - " + comment, task.getAssignedTo().getUsername(), Notification.NotificationType.TASK, taskId);
+        return ResponseEntity.ok("Comment added successfully");
+    }
+
+    @GetMapping("/{taskId}/comments")
+    public ResponseEntity<List<TaskComment>> getComments(@PathVariable Integer taskId) {
+        List<TaskComment> comments = taskService.getComments(taskId);
+        return ResponseEntity.ok(comments);
+    }
+
     /**
      * Handles validation exceptions.
      * @param ex The exception containing validation errors.
      * @return A response entity with validation error messages.
      */
+    @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<String> handleValidationExceptions(MethodArgumentNotValidException ex) {
         String errorMessage = ex.getBindingResult().getAllErrors().stream()
-                .map(objectError -> objectError.getDefaultMessage())
+                .map(DefaultMessageSourceResolvable::getDefaultMessage)
                 .collect(Collectors.joining(", "));
         return ResponseEntity.badRequest().body("Validation failed: " + errorMessage);
     }

@@ -37,7 +37,7 @@ public class EmployeeController {
         if (currentUser == null) {
             return ResponseEntity.status(404).body(null);
         }
-        List<Notification> notifications = notificationService.findNotificationsByUser(currentUser.getId());
+        List<Notification> notifications = notificationService.findNotificationsByUserAndReadFalse(currentUser.getId());
         return ResponseEntity.ok(notifications);
     }
 

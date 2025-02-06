@@ -1,17 +1,12 @@
 //Entity class for Task
 package com.example.taskmanager.entity;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonFormat;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import org.hibernate.annotations.ColumnDefault;
-
-import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -50,8 +45,9 @@ public class Task {
     @Column(name = "description", length = Integer.MAX_VALUE)
     private String description;
 
-    @ElementCollection
-    private List<String> comments = new ArrayList<>();
+    @OneToMany(mappedBy = "task", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonManagedReference
+    private List<TaskComment> comments = new ArrayList<>();
 
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm", timezone = "UTC")
     @ColumnDefault("CURRENT_TIMESTAMP")
@@ -104,11 +100,11 @@ public class Task {
 
     // Getters and setters
 
-    public List<String> getComments() {
+    public List<TaskComment> getComments() {
         return comments;
     }
 
-    public void setComments(List<String> comments) {
+    public void setComments(List<TaskComment> comments) {
         this.comments = comments;
     }
 

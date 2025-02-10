@@ -1,12 +1,8 @@
 package com.example.taskmanager.controller;
 
-import com.example.taskmanager.entity.ChangePasswordRequest;
-import com.example.taskmanager.entity.Department;
-import com.example.taskmanager.entity.Qualification;
-import com.example.taskmanager.entity.User;
+import com.example.taskmanager.entity.*;
 import com.example.taskmanager.exception.ResourceNotFoundException;
-import com.example.taskmanager.service.DepartmentService;
-import com.example.taskmanager.service.QualificationService;
+import com.example.taskmanager.service.NotificationService;
 import com.example.taskmanager.service.UserService;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
@@ -31,6 +27,9 @@ public class UserController {
     public final UserService userService;
 
     @Autowired
+    public NotificationService notificationService;
+
+    @Autowired
     public UserController(UserService userService) {
         this.userService = userService;
     }
@@ -39,6 +38,7 @@ public class UserController {
     public ResponseEntity<User> createUser(@RequestBody Map<String, Object> userData) {
         try {
             User createdUser = userService.createUser(userData);
+            notificationService.sendAdminNotification("New user registered: " + createdUser.getUsername(), Notification.NotificationType.USER, createdUser.getId());
             logger.info("Created user: {}", createdUser.toString());
             return new ResponseEntity<>(createdUser, HttpStatus.CREATED);
         } catch (Exception e) {
@@ -52,6 +52,8 @@ public class UserController {
         try {
             User updatedUser = userService.updateUser(id, userData);
             logger.info("Updated user: {}", updatedUser.toString());
+            notificationService.sendAdminNotification("New user update registered: " + updatedUser.getUsername(), Notification.NotificationType.USER, updatedUser.getId());
+
             return ResponseEntity.ok(updatedUser);
         } catch (ResourceNotFoundException e) {
             logger.error("User not found with id: {}", id, e);

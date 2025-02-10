@@ -56,7 +56,6 @@ public class UserService {
         if (userRepository.existsByEmail(user.getEmail())) {
             throw new IllegalArgumentException("Email already exists");
         }
-        notificationService.sendAdminNotification("New user registered: " + user.getUsername(), Notification.NotificationType.USER, user.getId());
         return saveUser(user);
     }
 
@@ -66,7 +65,6 @@ public class UserService {
         }
         User existingUser = userRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("User not found with id " + id));
         updateExistingUser(existingUser, userData);
-        notificationService.sendAdminNotification("New user update registered: " + existingUser.getUsername(), Notification.NotificationType.USER, existingUser.getId());
 
         return saveUser(existingUser);
     }

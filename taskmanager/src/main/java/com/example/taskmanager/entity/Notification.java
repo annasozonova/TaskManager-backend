@@ -6,6 +6,10 @@ import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
 
+/**
+ * Entity representing a notification for a user. A notification can be of different types
+ * (e.g., related to a task or user) and has properties such as message, read status, and timestamp.
+ */
 @Entity
 public class Notification {
 
@@ -29,6 +33,9 @@ public class Notification {
 
     // Constructors, Getters and Setters
 
+    /**
+     * Enum representing the possible types of notifications.
+     */
     public enum NotificationType {
         @JsonProperty("TASK")
         TASK,
@@ -42,6 +49,12 @@ public class Notification {
 
     public Notification() {}
 
+    /**
+     * Returns a string representation of the notification, including the user's username, message,
+     * read status, timestamp, type, and reference ID.
+     *
+     * @return the string representation of the notification
+     */
     @Override
     public String toString() {
         return "Notification{" +

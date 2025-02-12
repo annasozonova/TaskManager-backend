@@ -2,6 +2,10 @@ package com.example.taskmanager.entity;
 
 import jakarta.validation.constraints.NotBlank;
 
+/**
+ * This class is used for handling the request data for changing a user's password.
+ * It contains the current password and the new password fields.
+ */
 public class ChangePasswordRequest {
 
     @NotBlank
@@ -10,7 +14,7 @@ public class ChangePasswordRequest {
     @NotBlank
     private String newPassword;
 
-    // Геттеры и сеттеры
+    // Getters and Setters
 
     public String getCurrentPassword() {
         return currentPassword;

@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.support.DefaultMessageSourceResolvable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -21,6 +22,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+/**
+ * Controller for managing tasks in the system.
+ * This controller provides endpoints to create, update, retrieve, delete tasks,
+ * as well as to add and retrieve comments for tasks. It also handles task status updates and sends notifications.
+ */
 @RestController
 @RequestMapping("/api/tasks")
 public class TaskController {
@@ -51,8 +57,13 @@ public class TaskController {
     }
 
     /**
-     * Retrieves all tasks.
-     * @return A list of all tasks.
+     * Retrieves all tasks assigned to the currently authenticated user.
+     * The tasks returned depend on the role of the user:
+     * - Admin: Retrieves all tasks.
+     * - Department head: Retrieves tasks for the specific department.
+     * - Employee: Retrieves tasks assigned to the user.
+     * @param userDetails The authenticated user's details.
+     * @return A list of tasks based on the user's role.
      */
     @GetMapping
     public ResponseEntity<?> getTasks(@AuthenticationPrincipal UserDetails userDetails) {
@@ -88,6 +99,14 @@ public class TaskController {
         return ResponseEntity.ok(task);
     }
 
+    /**
+     * Updates a task's status, description, or adds a comment.
+     * The description can only be updated by Admin or Department Head.
+     * @param id The ID of the task to update.
+     * @param updates A map containing the fields to update (status, description, comments).
+     * @param userDetails The authenticated user's details.
+     * @return The updated task.
+     */
     @PutMapping("/{id}")
     public ResponseEntity<Task> updateTask(@PathVariable Integer id, @RequestBody Map<String, Object> updates, @AuthenticationPrincipal UserDetails userDetails) {
         Task task = taskService.findTaskById(id);
@@ -96,19 +115,21 @@ public class TaskController {
             return ResponseEntity.status(404).body(null);
         }
 
-        // Обновление статуса задачи
         if (updates.containsKey("status")) {
             task.setStatus(Task.TaskStatus.valueOf((String) updates.get("status")));
         }
 
-        // Добавление комментария к задаче
         if (updates.containsKey("comments")) {
             taskService.addComment(task.getId(), (String) updates.get("comments"));
             notificationService.sendNotification("New comment on task: " + task.getTitle() + " - " + updates.get("comments"), task.getAssignedTo().getUsername(), Notification.NotificationType.TASK, task.getId());
         }
 
-        // Обновление описания задачи (только если выдавший задачу)
-        if (userDetails.getAuthorities().stream().anyMatch(auth -> auth.getAuthority().equals("ROLE_ADMIN") || auth.getAuthority().equals("ROLE_DEPARTMENT_HEAD"))) {
+        String role = userDetails.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .findFirst()
+                .orElse("");
+
+        if ("ROLE_ADMIN".equals(role) || "ROLE_DEPARTMENT_HEAD".equals(role)) {
             if (updates.containsKey("description")) {
                 task.setDescription((String) updates.get("description"));
             }
@@ -121,7 +142,7 @@ public class TaskController {
     /**
      * Deletes a task by its ID.
      * @param id The ID of the task to delete.
-     * @return HTTP status NO CONTENT.
+     * @return HTTP status NO CONTENT indicating successful deletion.
      */
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteTask(@PathVariable Integer id) {
@@ -129,6 +150,12 @@ public class TaskController {
         return ResponseEntity.noContent().build();
     }
 
+    /**
+     * Adds a comment to a task and sends a notification to the assigned user.
+     * @param taskId The ID of the task to add a comment to.
+     * @param comment The comment text.
+     * @return A response indicating success.
+     */
     @PostMapping("/{taskId}/comments")
     public ResponseEntity<?> addComment(@PathVariable Integer taskId, @RequestBody String comment) {
         Task task = taskService.findTaskById(taskId);
@@ -137,6 +164,11 @@ public class TaskController {
         return ResponseEntity.ok("Comment added successfully");
     }
 
+    /**
+     * Retrieves all comments for a specific task.
+     * @param taskId The ID of the task.
+     * @return A list of comments for the task.
+     */
     @GetMapping("/{taskId}/comments")
     public ResponseEntity<List<TaskComment>> getComments(@PathVariable Integer taskId) {
         List<TaskComment> comments = taskService.getComments(taskId);
@@ -144,9 +176,9 @@ public class TaskController {
     }
 
     /**
-     * Handles validation exceptions.
+     * Handles validation exceptions and returns error messages.
      * @param ex The exception containing validation errors.
-     * @return A response entity with validation error messages.
+     * @return A response entity with the validation error messages.
      */
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<String> handleValidationExceptions(MethodArgumentNotValidException ex) {

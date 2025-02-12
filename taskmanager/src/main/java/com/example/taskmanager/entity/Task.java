@@ -1,4 +1,3 @@
-//Entity class for Task
 package com.example.taskmanager.entity;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
@@ -12,11 +11,16 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Entity representing a Task in the system.
+ */
 @Entity
 @Table(name = "tasks")
 public class Task {
 
-    // Enum to represent the status of a task
+    /**
+     * Enum representing the possible status values of a task.
+     */
     public enum TaskStatus {
         PENDING,
         IN_PROGRESS,
@@ -24,7 +28,9 @@ public class Task {
         DELAYED
     }
 
-    // Enum to represent the priority level of a task
+    /**
+     * Enum representing the priority levels of a task.
+     */
     public enum TaskPriority {
         LOW,
         MEDIUM,
@@ -87,12 +93,18 @@ public class Task {
     @JoinColumn(name = "department_id", referencedColumnName = "id")
     private Department department;
 
+    /**
+     * Sets the creation and update timestamps before persisting the task.
+     */
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
         updatedAt = LocalDateTime.now();
     }
 
+    /**
+     * Updates the timestamp when the task is updated.
+     */
     @PreUpdate
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();

@@ -14,6 +14,11 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+/**
+ * Service class that handles business logic related to departments, users, and tasks.
+ * It provides methods for creating, retrieving, updating departments, and managing
+ * the users and tasks associated with those departments.
+ */
 @Service
 public class DepartmentService {
     private final TaskRepository taskRepository;
@@ -29,6 +34,8 @@ public class DepartmentService {
 
     /**
      * Creates a new department.
+     * This method saves the provided department to the database.
+     *
      * @param department The department to create.
      * @return The created department.
      */
@@ -37,7 +44,9 @@ public class DepartmentService {
     }
 
     /**
-     * Retrieves all departments.
+     * Retrieves all departments from the database.
+     * This method returns a list of all departments.
+     *
      * @return A list of all departments.
      */
     public List<Department> getAllDepartments() {
@@ -46,6 +55,9 @@ public class DepartmentService {
 
     /**
      * Retrieves all tasks associated with a specific department.
+     * This method fetches all users within the specified department and
+     * retrieves tasks assigned to those users.
+     *
      * @param departmentId The ID of the department.
      * @return A list of tasks assigned to users in the department.
      */
@@ -58,8 +70,12 @@ public class DepartmentService {
 
     /**
      * Retrieves all users in a specific department.
+     * This method finds the department by ID and returns a list of users
+     * associated with that department.
+     *
      * @param departmentId The ID of the department.
      * @return A list of users in the department.
+     * @throws ResourceNotFoundException If the department does not exist.
      */
     public List<User> getUsersByDepartmentId(int departmentId) {
         return userRepository.getUsersByDepartment(departmentRepository.findById(departmentId)
@@ -68,9 +84,12 @@ public class DepartmentService {
 
     /**
      * Updates an existing department.
+     * This method checks if the department exists, then updates its details.
+     *
      * @param id The ID of the department to update.
      * @param department The department object containing updated details.
      * @return The updated department.
+     * @throws ResourceNotFoundException If the department is not found.
      */
     public Department updateDepartment(Integer id, Department department) {
         if (!departmentRepository.existsById(id)) {
@@ -80,6 +99,14 @@ public class DepartmentService {
         return departmentRepository.save(department);
     }
 
+    /**
+     * Retrieves a department by its ID.
+     * This method finds the department by ID and returns it as an Optional.
+     *
+     * @param id The ID of the department.
+     * @return An Optional containing the department, or an empty Optional if not found.
+     * @throws ResourceNotFoundException If the department is not found.
+     */
     public Optional<Department> findDepartmentById(Integer id) {
         if (!departmentRepository.existsById(id)) {
             throw new ResourceNotFoundException("Department not found with id " + id);

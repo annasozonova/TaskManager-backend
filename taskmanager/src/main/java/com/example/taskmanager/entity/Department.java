@@ -1,4 +1,3 @@
-//Entity class for Department
 package com.example.taskmanager.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -8,6 +7,10 @@ import jakarta.validation.constraints.Size;
 import java.util.Objects;
 import java.util.Set;
 
+/**
+ * Entity representing a department within the organization.
+ * Each department has a name and is associated with multiple users and tasks.
+ */
 @Entity
 @Table(name = "departments")
 public class Department {

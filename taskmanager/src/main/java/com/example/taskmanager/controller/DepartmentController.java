@@ -12,6 +12,10 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+/**
+ * Controller for handling requests related to departments.
+ * Provides CRUD operations for departments and allows retrieval of users and tasks associated with a department.
+ */
 @RestController
 @RequestMapping("/api/departments")
 public class DepartmentController {
@@ -27,8 +31,8 @@ public class DepartmentController {
 
     /**
      * Creates a new department.
-     * @param department The department to create.
-     * @return The created department with HTTP status CREATED.
+     * @param department The department to be created.
+     * @return The created department with HTTP status CREATED (201).
      */
     @PostMapping
     public ResponseEntity<Department> createDepartment(@RequestBody Department department) {
@@ -38,9 +42,9 @@ public class DepartmentController {
 
     /**
      * Updates an existing department by its ID.
-     * @param id The ID of the department to update.
+     * @param id The ID of the department to be updated.
      * @param department The updated department details.
-     * @return The updated department.
+     * @return The updated department with HTTP status OK (200).
      */
     @PutMapping("/{id}")
     public ResponseEntity<Department> updateDepartment(@PathVariable Integer id, @RequestBody Department department) {
@@ -50,7 +54,7 @@ public class DepartmentController {
 
     /**
      * Retrieves a list of all departments.
-     * @return A list of all departments.
+     * @return A list of all departments with HTTP status OK (200).
      */
     @GetMapping
     public ResponseEntity<List<Department>> getAllDepartments() {
@@ -60,8 +64,8 @@ public class DepartmentController {
 
     /**
      * Retrieves a list of all users belonging to a specific department.
-     * @param departmentId The ID of the department.
-     * @return A list of users in the department.
+     * @param departmentId The ID of the department whose users are to be retrieved.
+     * @return A list of users in the specified department.
      */
     @GetMapping("/{departmentId}/users")
     public List<User> getUsersByDepartment(@PathVariable int departmentId) {
@@ -70,8 +74,8 @@ public class DepartmentController {
 
     /**
      * Retrieves a list of all tasks assigned to a specific department.
-     * @param departmentId The ID of the department.
-     * @return A list of tasks for the department.
+     * @param departmentId The ID of the department whose tasks are to be retrieved.
+     * @return A list of tasks for the specified department.
      */
     @GetMapping("/{departmentId}/tasks")
     public List<Task> getTasksByDepartment(@PathVariable int departmentId) {

@@ -6,19 +6,17 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import org.hibernate.annotations.ColumnDefault;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 
+/**
+ * Entity representing a user in the system.
+ */
 @Entity
 @Table(name = "users")
-public class User implements UserDetails {
+public class User {
     public enum UserRole {EMPLOYEE, DEPARTMENT_HEAD, ADMIN}
 
     @Id
@@ -78,22 +76,21 @@ public class User implements UserDetails {
     @OneToMany(mappedBy = "user")
     private List<Notification> notifications;
 
+    /**
+     * Method to set the creation timestamp before persisting the entity.
+     */
     @PrePersist
     protected void onCreate() {
         createdAt = Instant.now();
         updatedAt = Instant.now();
     }
 
+    /**
+     * Method to update the timestamp before updating the entity.
+     */
     @PreUpdate
     protected void onUpdate() {
         updatedAt = Instant.now();
-    }
-
-    @Override
-    public Collection<? extends GrantedAuthority> getAuthorities() {
-        List<SimpleGrantedAuthority> authorities = new ArrayList<>();
-        authorities.add(new SimpleGrantedAuthority("ROLE_" + role.name()));
-        return authorities;
     }
 
     // Getters and Setters
@@ -202,6 +199,11 @@ public class User implements UserDetails {
         this.updatedAt = updatedAt;
     }
 
+    /**
+     * Returns a string representation of the user.
+     *
+     * @return string representation of the user
+     */
     @Override
     public String toString() {
         return "User{" + "id=" + id +
@@ -217,6 +219,12 @@ public class User implements UserDetails {
                 ", qualification=" + qualification + '}';
     }
 
+    /**
+     * Compares this user to another object.
+     *
+     * @param o the object to compare to
+     * @return true if the users are equal, false otherwise
+     */
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -225,6 +233,11 @@ public class User implements UserDetails {
         return id != null && id.equals(user.id);
     }
 
+    /**
+     * Returns the hash code of the user.
+     *
+     * @return hash code of the user
+     */
     @Override
     public int hashCode() {
         return id != null ? id.hashCode() : 0;

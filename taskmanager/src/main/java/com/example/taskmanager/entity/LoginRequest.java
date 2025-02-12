@@ -1,9 +1,19 @@
 package com.example.taskmanager.entity;
 
+/**
+ * This class represents the login request data containing the username and password.
+ * It is used to authenticate a user in the system.
+ */
 public class LoginRequest {
     private String username;
     private String password;
 
+    /**
+     * Returns a string representation of the LoginRequest object.
+     * The password is protected and not shown in the returned string.
+     *
+     * @return string representation of the LoginRequest object
+     */
     @Override
     public String toString() {
         return "LoginRequest{" +
@@ -12,14 +22,7 @@ public class LoginRequest {
                 '}';
     }
 
-    // Конструкторы, геттеры и сеттеры
-
-    public LoginRequest() {}
-
-    public LoginRequest(String username, String password) {
-        this.username = username;
-        this.password = password;
-    }
+    // Getters and Setters
 
     public String getUsername() {
         return username;

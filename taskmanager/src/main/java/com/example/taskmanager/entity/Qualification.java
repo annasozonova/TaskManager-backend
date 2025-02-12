@@ -5,6 +5,9 @@ import jakarta.validation.constraints.Min;
 
 import java.util.Objects;
 
+/**
+ * Entity representing a user's qualification.
+ */
 @Entity
 @Table(name = "qualifications")
 public class Qualification {
@@ -32,6 +35,10 @@ public class Qualification {
     @Column(name = "qualification", length = 50)
     private QualificationType qualification;
 
+    /**
+     * The user associated with this qualification.
+     * This is a one-to-one relationship, and the "qualification" field in the User entity is the owning side.
+     */
     @OneToOne(mappedBy = "qualification")
     private User user;
 

@@ -5,6 +5,10 @@ import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
 
+/**
+ * Entity representing a comment on a task.
+ * Each comment is linked to a specific task and contains the comment text and creation timestamp.
+ */
 @Entity
 @Table(name = "task_comments")
 public class TaskComment {
@@ -30,7 +34,6 @@ public class TaskComment {
     }
 
     // Getters and setters
-
 
     public Integer getId() {
         return id;

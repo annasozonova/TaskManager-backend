@@ -20,7 +20,7 @@ public class Qualification {
 
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "qualification_id_seq")
-    @SequenceGenerator(name = "qualification_id_seq", sequenceName = "qualification_id_seq", allocationSize = 1)
+    @SequenceGenerator(name = "qualifications_id_seq", sequenceName = "qualification_id_seq", allocationSize = 1)
     @Column(name = "id", nullable = false)
     private Integer id;
 

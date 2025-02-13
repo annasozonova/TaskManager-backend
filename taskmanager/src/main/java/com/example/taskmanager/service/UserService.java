@@ -4,6 +4,7 @@ import com.example.taskmanager.entity.*;
 import com.example.taskmanager.exception.ResourceNotFoundException;
 import com.example.taskmanager.repository.TaskRepository;
 import com.example.taskmanager.repository.UserRepository;
+import org.aspectj.weaver.ast.Not;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -134,6 +135,12 @@ public class UserService {
             task.setAssignedTo(null);  // Unassign task
         }
         taskRepository.saveAll(tasks);
+
+        // Delete user's notifications
+        List<Notification> notifications = user.getNotifications();
+        for (Notification notification : notifications) {
+            notificationService.deleteNotification(notification.getId());
+        }
 
         userRepository.deleteById(id);
         notificationService.sendAdminNotification("User deleted: " + user.getUsername(), Notification.NotificationType.USER, user.getId());

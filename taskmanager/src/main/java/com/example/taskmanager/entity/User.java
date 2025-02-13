@@ -74,6 +74,7 @@ public class User {
     private LocalDateTime lastLogin;
 
     @OneToMany(mappedBy = "user")
+    @JsonIgnore
     private List<Notification> notifications;
 
     /**
@@ -94,6 +95,14 @@ public class User {
     }
 
     // Getters and Setters
+
+    public List<Notification> getNotifications() {
+        return notifications;
+    }
+
+    public void setNotifications(List<Notification> notifications) {
+        this.notifications = notifications;
+    }
 
     public LocalDateTime getLastLogin() {
         return lastLogin;

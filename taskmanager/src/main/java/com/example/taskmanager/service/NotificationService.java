@@ -122,4 +122,8 @@ public class NotificationService {
         User user = userRepository.findByUsername(username);
         return notificationRepository.findByUser(user);
     }
+
+    public void deleteNotification(Integer id) {
+        notificationRepository.deleteById(id);
+    }
 }

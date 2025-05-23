@@ -128,7 +128,6 @@ public class TaskService {
 
         Task updatedTask = taskRepository.save(existingTask);
 
-        // Уведомление главы департамента об изменении задачи
         notificationService.sendDepartmentHeadNotification("Task updated: " + existingTask.getTitle(), existingTask.getDepartment().getId(), Notification.NotificationType.TASK, existingTask.getId());
 
         return updatedTask;
@@ -182,7 +181,6 @@ public class TaskService {
         List<User> users = userRepository.findAll();
         logger.info("All users before filtering: {}", users);
 
-        // Фильтрация пользователей по роли
         users = users.stream()
                 .filter(user -> {
                     boolean isEmployee = user.getRole() == User.UserRole.EMPLOYEE;
@@ -283,7 +281,7 @@ public class TaskService {
         Task task = taskRepository.findById(taskId).orElseThrow(() -> new RuntimeException("Task not found"));
         if (comment != null && !comment.trim().isEmpty()) {
             TaskComment taskComment = new TaskComment(task, comment);
-            taskCommentRepository.save(taskComment); // Сохранение комментария
+            taskCommentRepository.save(taskComment);
         }
     }
 
